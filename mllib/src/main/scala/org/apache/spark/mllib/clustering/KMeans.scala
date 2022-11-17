@@ -203,6 +203,16 @@ class KMeans private (
     this
   }
 
+    /**
+   * Train a K-means model on the given set of points with weight; `data` should be cached for high
+   * performance, because this is an iterative algorithm.
+   */
+  @Since("3.2.1")
+  def runWithWeights(data: RDD[(Vector, Double)]): KMeansModel = {
+    val handlePersistence = data.getStorageLevel == StorageLevel.NONE
+    runWithWeight(data, handlePersistence, None)
+  }
+
   /**
    * Train a K-means model on the given set of points; `data` should be cached for high
    * performance, because this is an iterative algorithm.
@@ -432,7 +442,6 @@ class KMeans private (
   }
 }
 
-
 /**
  * Top-level methods for calling K-means clustering.
  */
@@ -444,6 +453,34 @@ object KMeans {
   val RANDOM = "random"
   @Since("0.8.0")
   val K_MEANS_PARALLEL = "k-means||"
+
+  /**
+   * Trains a k-means model using the given set of parameters.
+   *
+   * @param data Training points as an `RDD` of `Vector` types.
+   * @param k Number of clusters to create.
+   * @param maxIterations Maximum number of iterations allowed.
+   * @param initializationMode The initialization algorithm. This can either be "random" or
+   *                           "k-means||". (default: "k-means||")
+   * @param seed Random seed for cluster initialization. Default is to generate seed based
+   *             on system time.
+   * @param initialModel The initialization model. This can be a trained model with preset centroid.
+   */
+  @Since("3.2.1")
+  def trainWithWeights(
+      data: RDD[(Vector, Double)],
+      k: Int,
+      maxIterations: Int,
+      initializationMode: String,
+      seed: Long, 
+      initialModel: KMeansModel): KMeansModel = {
+    new KMeans().setK(k)
+      .setMaxIterations(maxIterations)
+      .setInitializationMode(initializationMode)
+      .setSeed(seed)
+      .setInitialModel(initialModel)
+      .runWithWeights(data)
+  }
 
   /**
    * Trains a k-means model using the given set of parameters.
